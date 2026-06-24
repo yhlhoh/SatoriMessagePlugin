@@ -1,0 +1,67 @@
+<UserControl x:Class="SatoriMessagePlugin.Controls.SatoriMessageComponent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:SatoriMessagePlugin.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="80" d:DesignWidth="320"
+             TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+             FontFamily="{StaticResource HarmonyOsSans}"
+             TextElement.FontWeight="Regular"
+             TextElement.FontSize="14"
+             d:DataContext="{d:DesignInstance local:SatoriMessageComponent}">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource MaterialDesignPaper}"
+            CornerRadius="8"
+            Padding="12,10"
+            Margin="4">
+
+        <StackPanel DataContext="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=local:SatoriMessageComponent}}">
+
+            <!-- 第一行：图标 + 格式化的消息文本（私聊：联系人:消息 / 群聊：发件人(群名):消息） -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                <TextBlock FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="👥"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Plugin.LatestMessage.IsPrivateChat}" Value="True">
+                                    <Setter Property="Text" Value="👤"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <TextBlock Text="{Binding Plugin.LatestMessage.FormattedDisplay}"
+                           FontSize="13"
+                           TextTrimming="CharacterEllipsis"
+                           TextWrapping="Wrap"
+                           MaxHeight="60"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- 第二行：时间戳 + 平台标签 -->
+            <StackPanel Orientation="Horizontal" Margin="24,0,0,0">
+                <TextBlock Text="{Binding Plugin.LatestMessage.DisplayTime}"
+                           Foreground="{DynamicResource MaterialDesignBodyLight}"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding Plugin.ConnectionSettings.ShowTimestamp, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Visible}"/>
+                <TextBlock Text="{Binding Plugin.LatestMessage.Platform, StringFormat=' · {0}'}"
+                           Foreground="{DynamicResource MaterialDesignBodyLight}"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           Margin="4,0,0,0"/>
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</UserControl>
