@@ -1,91 +1,85 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace SatoriMessagePlugin.Models;
 
-public class SatoriConnectionSettings : ObservableRecipient
+public partial class SatoriConnectionSettings : ObservableObject
 {
-    private string _webSocketUrl = "ws://127.0.0.1:5140/";
-    private string _token = "";
-    private bool _enableNotification = true;
-    private string _blockedUserIds = "";
-    private string _blockedChannelIds = "";
-    private bool _showTimestamp = true;
-    private int _maxContentLength = 200;
-
-    public string WebSocketUrl
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        get => _webSocketUrl;
-        set
+        WriteIndented = true
+    };
+
+    [ObservableProperty]
+    private string _satoriWsUrl = "";
+
+    [ObservableProperty]
+    private bool _isEnabled = true;
+
+    [ObservableProperty]
+    private bool _autoReconnect = true;
+
+    [ObservableProperty]
+    private double _reconnectDelaySeconds = 5.0;
+
+    [ObservableProperty]
+    private string _mutedGroupsText = "";
+
+    [ObservableProperty]
+    private string _mutedSendersText = "";
+
+    [JsonIgnore]
+    public IReadOnlyList<string> MutedGroups => SplitLines(MutedGroupsText);
+
+    [JsonIgnore]
+    public IReadOnlyList<string> MutedSenders => SplitLines(MutedSendersText);
+
+    [JsonIgnore]
+    public string SettingsDirectory { get; set; } = "";
+
+    [JsonIgnore]
+    public string SettingsFilePath => Path.Combine(SettingsDirectory, "settings.json");
+
+    public static SatoriConnectionSettings Load(string directory)
+    {
+        var path = Path.Combine(directory, "settings.json");
+        try
         {
-            if (value == _webSocketUrl) return;
-            _webSocketUrl = value;
-            OnPropertyChanged();
+            if (!File.Exists(path))
+            {
+                return new SatoriConnectionSettings { SettingsDirectory = directory };
+            }
+
+            var json = File.ReadAllText(path);
+            var settings = JsonSerializer.Deserialize<SatoriConnectionSettings>(json) ?? new SatoriConnectionSettings();
+            settings.SettingsDirectory = directory;
+            return settings;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SatoriMessagePlugin] 加载设置失败，使用默认设置: {ex.Message}");
+            return new SatoriConnectionSettings { SettingsDirectory = directory };
         }
     }
 
-    public string Token
+    public void Save()
     {
-        get => _token;
-        set
-        {
-            if (value == _token) return;
-            _token = value;
-            OnPropertyChanged();
-        }
+        Directory.CreateDirectory(SettingsDirectory);
+        File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(this, JsonOptions));
     }
 
-    public bool EnableNotification
+    public void Normalize()
     {
-        get => _enableNotification;
-        set
-        {
-            if (value == _enableNotification) return;
-            _enableNotification = value;
-            OnPropertyChanged();
-        }
+        ReconnectDelaySeconds = Math.Clamp(ReconnectDelaySeconds, 1.0, 60.0);
+        SatoriWsUrl = (SatoriWsUrl ?? "").Trim();
     }
 
-    public string BlockedUserIds
+    private static IReadOnlyList<string> SplitLines(string value)
     {
-        get => _blockedUserIds;
-        set
-        {
-            if (value == _blockedUserIds) return;
-            _blockedUserIds = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public string BlockedChannelIds
-    {
-        get => _blockedChannelIds;
-        set
-        {
-            if (value == _blockedChannelIds) return;
-            _blockedChannelIds = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public bool ShowTimestamp
-    {
-        get => _showTimestamp;
-        set
-        {
-            if (value == _showTimestamp) return;
-            _showTimestamp = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public int MaxContentLength
-    {
-        get => _maxContentLength;
-        set
-        {
-            if (value == _maxContentLength) return;
-            _maxContentLength = value;
-            OnPropertyChanged();
-        }
+        return (value ?? "")
+            .Split(["\r\n", "\n", "\r"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToArray();
     }
 }

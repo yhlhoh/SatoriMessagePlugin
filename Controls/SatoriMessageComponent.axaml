@@ -1,0 +1,13 @@
+<ci:ComponentBase x:Class="SatoriMessagePlugin.Controls.SatoriMessageComponent"
+                  xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                  xmlns:local="clr-namespace:SatoriMessagePlugin.Controls"
+                  AttachedToVisualTree="Visual_OnAttachedToVisualTree"
+                  DetachedFromVisualTree="Visual_OnDetachedFromVisualTree">
+    <TextBlock Text="{Binding DisplayText}"
+               DataContext="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=local:SatoriMessageComponent}}"
+               TextTrimming="CharacterEllipsis"
+               VerticalAlignment="Center"
+               FontSize="14" />
+</ci:ComponentBase>

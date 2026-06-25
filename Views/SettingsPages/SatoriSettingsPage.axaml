@@ -1,0 +1,192 @@
+<ci:SettingsPageBase x:Class="SatoriMessagePlugin.Views.SettingsPages.SatoriSettingsPage"
+      xmlns="https://github.com/avaloniaui"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:ci="http://classisland.tech/schemas/xaml/core"
+      xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+      mc:Ignorable="d"
+      d:DesignHeight="700" d:DesignWidth="600">
+
+    <ScrollViewer>
+        <StackPanel Classes="settings-container animated-intro" Spacing="4">
+
+            <!-- Page Header -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <ci:FluentIcon FontSize="48"
+                    Glyph="&#xE715;"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    VerticalAlignment="Center"
+                    Margin="0,0,12,0" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock FontSize="24" FontWeight="SemiBold">Satori消息监听</TextBlock>
+                    <TextBlock FontSize="13"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                        连接到 Satori 服务，接收消息并转发为 ClassIsland 提醒
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- 快捷操作 -->
+            <TextBlock FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                       Margin="0,12,0,0">
+                快捷操作
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,4">
+                <Button Click="OnReconnectClick" IsEnabled="{Binding CanReconnect}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ci:FluentIcon Glyph="&#xE72C;" />
+                        <TextBlock Text="重新连接" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- 连接设置 -->
+            <TextBlock FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                       Margin="0,12,0,0">
+                连接设置
+            </TextBlock>
+
+            <controls:SettingsExpander IconSource="{ci:FluentIconSource Glyph=&#xE72A;}"
+                                       Header="启用监听"
+                                       Description="开启或关闭 Satori 消息监听功能">
+                <controls:SettingsExpander.Footer>
+                    <ToggleSwitch IsChecked="{Binding Settings.IsEnabled, Mode=TwoWay}" />
+                </controls:SettingsExpander.Footer>
+            </controls:SettingsExpander>
+
+            <controls:SettingsExpander IconSource="{ci:FluentIconSource Glyph=&#xE774;}"
+                                       Header="WebSocket 地址"
+                                       Description="Satori 服务的 WebSocket 连接地址，例如 ws://localhost:5140/events">
+                <controls:SettingsExpander.Footer>
+                    <TextBox Text="{Binding Settings.SatoriWsUrl, Mode=TwoWay}"
+                             Width="320"
+                             HorizontalAlignment="Right"
+                             Watermark="ws://host:port/events" />
+                </controls:SettingsExpander.Footer>
+            </controls:SettingsExpander>
+
+            <controls:SettingsExpander IconSource="{ci:FluentIconSource Glyph=&#xE895;}"
+                                       Header="连接状态"
+                                       Description="{Binding ConnectionStatusText}">
+                <controls:SettingsExpander.Footer>
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Border Width="10" Height="10" CornerRadius="5"
+                                Background="{Binding ConnectionStatusColor}" />
+                        <TextBlock Text="{Binding ConnectionStatusText}"
+                                   FontSize="12"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </controls:SettingsExpander.Footer>
+            </controls:SettingsExpander>
+
+            <!-- 重连设置 -->
+            <TextBlock FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                       Margin="0,20,0,0">
+                重连设置
+            </TextBlock>
+
+            <controls:SettingsExpander IconSource="{ci:FluentIconSource Glyph=&#xE71D;}"
+                                       Header="自动重连"
+                                       Description="连接断开后自动尝试重新连接">
+                <controls:SettingsExpander.Footer>
+                    <ToggleSwitch IsChecked="{Binding Settings.AutoReconnect, Mode=TwoWay}" />
+                </controls:SettingsExpander.Footer>
+            </controls:SettingsExpander>
+
+            <controls:SettingsExpander IconSource="{ci:FluentIconSource Glyph=&#xE916;}"
+                                       Header="重连间隔（秒）"
+                                       Description="断开后等待多少秒再尝试重连，范围 1~60 秒">
+                <controls:SettingsExpander.Footer>
+                    <TextBox Text="{Binding Settings.ReconnectDelaySeconds, Mode=TwoWay}"
+                             Width="100"
+                             HorizontalAlignment="Right" />
+                </controls:SettingsExpander.Footer>
+            </controls:SettingsExpander>
+
+            <!-- 过滤规则 -->
+            <TextBlock FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                       Margin="0,20,0,0">
+                过滤规则
+            </TextBlock>
+
+            <controls:SettingsExpander IconSource="{ci:FluentIconSource Glyph=&#xE71D;}"
+                                       Header="不提醒的群聊（每行一个）"
+                                       Description="来自这些群聊的消息将不会触发提醒。填写群名关键词即可。">
+                <controls:SettingsExpander.Footer>
+                    <TextBox Text="{Binding Settings.MutedGroupsText, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             MinHeight="80"
+                             TextWrapping="Wrap"
+                             Watermark="例如：摸鱼群&#xa;广告群"
+                             HorizontalAlignment="Stretch" />
+                </controls:SettingsExpander.Footer>
+            </controls:SettingsExpander>
+
+            <controls:SettingsExpander IconSource="{ci:FluentIconSource Glyph=&#xE711;}"
+                                       Header="不提醒的发件人（每行一个）"
+                                       Description="来自这些发件人的消息将不会触发提醒。填写发件人名称关键词即可。">
+                <controls:SettingsExpander.Footer>
+                    <TextBox Text="{Binding Settings.MutedSendersText, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             MinHeight="80"
+                             TextWrapping="Wrap"
+                             Watermark="例如：机器人&#xa;广告号"
+                             HorizontalAlignment="Stretch" />
+                </controls:SettingsExpander.Footer>
+            </controls:SettingsExpander>
+
+            <!-- 关于 -->
+            <TextBlock FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                       Margin="0,20,0,0">
+                关于
+            </TextBlock>
+
+            <Border CornerRadius="4"
+                    ClipToBounds="True"
+                    Margin="0,4,0,4">
+                <controls:SettingsExpanderItem>
+                    <Grid Margin="12" ColumnDefinitions="Auto,*,Auto">
+                        <ci:FluentIcon Glyph="&#xE715;"
+                                       Grid.Column="0"
+                                       FontSize="48"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+
+                        <StackPanel Grid.Column="1"
+                                    Margin="12,0,0,0"
+                                    VerticalAlignment="Center">
+                            <TextBlock>
+                                <Run Text="Satori消息监听" FontSize="20" FontWeight="SemiBold" />
+                                <Run Text=" v1.0.0"
+                                     FontSize="14"
+                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </TextBlock>
+                            <TextBlock FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="Copyright © 2025 yhlhoh" />
+                            <TextBlock FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       Text="基于 ClassIsland.PluginSdk" />
+                            <TextBlock FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       Text="通过 Satori 协议接收消息" />
+                        </StackPanel>
+                    </Grid>
+                </controls:SettingsExpanderItem>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</ci:SettingsPageBase>

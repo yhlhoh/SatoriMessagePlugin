@@ -1,149 +1,133 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace SatoriMessagePlugin.Models;
 
-public class SatoriMessageInfo : ObservableRecipient
+/// <summary>
+/// 存储最新一条 Satori 消息的状态，供组件绑定显示。
+/// </summary>
+public partial class SatoriMessageInfo : ObservableObject
 {
-    private string _senderId = "";
-    private string _senderName = "";
-    private string _senderNickname = "";
+    [ObservableProperty]
+    private string _sender = "";
+
+    [ObservableProperty]
     private string _content = "";
-    private string _channelId = "";
-    private string _channelName = "";
-    private string _channelType = "";
-    private string _guildId = "";
-    private string _guildName = "";
-    private string _platform = "";
-    private DateTime _timestamp = DateTime.Now;
-    private string _messageId = "";
 
-    public string SenderId
+    [ObservableProperty]
+    private string _groupName = "";
+
+    [ObservableProperty]
+    private DateTimeOffset _receivedAt;
+
+    [ObservableProperty]
+    private bool _hasMessage;
+
+    /// <summary>是否有群名（即是否为群消息）</summary>
+    [ObservableProperty]
+    private bool _isGroupMessage;
+
+    /// <summary>用于显示的格式化文本</summary>
+    public string DisplayText
     {
-        get => _senderId;
-        set
+        get
         {
-            if (SetProperty(ref _senderId, value))
-                OnPropertyChanged(nameof(DisplaySender));
+            if (!HasMessage)
+                return "没有最近消息";
+
+            var sender = string.IsNullOrWhiteSpace(Sender) ? "未知" : Sender;
+            var content = string.IsNullOrWhiteSpace(Content) ? "" : Content;
+
+            if (IsGroupMessage && !string.IsNullOrWhiteSpace(GroupName))
+                return $"{sender}({GroupName}):{content}";
+
+            return $"{sender}：{content}";
         }
     }
 
-    public string SenderName
+    /// <summary>从 Satori message body JSON 解析消息</summary>
+    public void UpdateFromSatoriBody(JsonObject body)
     {
-        get => _senderName;
-        set
+        // 解析 user
+        var user = body["user"]?.AsObject();
+        var sender = "";
+        if (user != null)
         {
-            if (SetProperty(ref _senderName, value))
-                OnPropertyChanged(nameof(DisplaySender));
+            sender = user["nick"]?.GetValue<string>()
+                  ?? user["name"]?.GetValue<string>()
+                  ?? user["id"]?.GetValue<string>()
+                  ?? "";
         }
-    }
 
-    public string SenderNickname
-    {
-        get => _senderNickname;
-        set
+        // 解析 channel
+        var channel = body["channel"]?.AsObject();
+        var groupName = "";
+        if (channel != null)
         {
-            if (SetProperty(ref _senderNickname, value))
-                OnPropertyChanged(nameof(DisplaySender));
+            groupName = channel["name"]?.GetValue<string>() ?? "";
         }
-    }
 
-    public string Content
-    {
-        get => _content;
-        set
+        // 如果 channel 没有 name，尝试 guild
+        if (string.IsNullOrWhiteSpace(groupName))
         {
-            if (SetProperty(ref _content, value))
-                OnPropertyChanged(nameof(FormattedDisplay));
-        }
-    }
-
-    public string ChannelId
-    {
-        get => _channelId;
-        set => SetProperty(ref _channelId, value);
-    }
-
-    public string ChannelName
-    {
-        get => _channelName;
-        set
-        {
-            if (SetProperty(ref _channelName, value))
-                OnPropertyChanged(nameof(FormattedDisplay));
-        }
-    }
-
-    public string ChannelType
-    {
-        get => _channelType;
-        set
-        {
-            if (SetProperty(ref _channelType, value))
+            var guild = body["guild"]?.AsObject();
+            if (guild != null)
             {
-                OnPropertyChanged(nameof(IsPrivateChat));
-                OnPropertyChanged(nameof(IsGroupChat));
-                OnPropertyChanged(nameof(FormattedDisplay));
+                groupName = guild["name"]?.GetValue<string>() ?? "";
             }
         }
-    }
 
-    public string GuildId
-    {
-        get => _guildId;
-        set => SetProperty(ref _guildId, value);
-    }
-
-    public string GuildName
-    {
-        get => _guildName;
-        set
+        // 解析 content - 支持 "content" 和 "message.content" 两种格式
+        var content = body["content"]?.GetValue<string>();
+        if (string.IsNullOrWhiteSpace(content))
         {
-            if (SetProperty(ref _guildName, value))
-                OnPropertyChanged(nameof(FormattedDisplay));
+            var message = body["message"]?.AsObject();
+            if (message != null)
+            {
+                content = message["content"]?.GetValue<string>() ?? "";
+            }
         }
+        content ??= "";
+
+        // 解析时间
+        var createdAt = body["createdAt"]?.GetValue<long>() ?? 0;
+        var receivedAt = createdAt > 0
+            ? DateTimeOffset.FromUnixTimeMilliseconds(createdAt)
+            : DateTimeOffset.Now;
+
+        // 更新属性
+        _sender = sender;
+        _content = content;
+        _groupName = groupName;
+        _receivedAt = receivedAt;
+        _hasMessage = true;
+        _isGroupMessage = !string.IsNullOrWhiteSpace(groupName);
+
+        // 批量通知 UI 更新
+        OnPropertyChanged(nameof(Sender));
+        OnPropertyChanged(nameof(Content));
+        OnPropertyChanged(nameof(GroupName));
+        OnPropertyChanged(nameof(ReceivedAt));
+        OnPropertyChanged(nameof(HasMessage));
+        OnPropertyChanged(nameof(IsGroupMessage));
+        OnPropertyChanged(nameof(DisplayText));
     }
 
-    public string Platform
+    /// <summary>获取消息用于去重的唯一键</summary>
+    public string GetDeduplicationKey()
     {
-        get => _platform;
-        set => SetProperty(ref _platform, value);
+        var bodyId = _content ?? "";
+        return $"{_sender}|{_groupName}|{bodyId}|{_receivedAt:yyyyMMddHHmm}";
     }
 
-    public DateTime Timestamp
-    {
-        get => _timestamp;
-        set
-        {
-            if (SetProperty(ref _timestamp, value))
-                OnPropertyChanged(nameof(DisplayTime));
-        }
-    }
+    /// <summary>通知标题</summary>
+    public string NotificationTitle => IsGroupMessage
+        ? $"{Sender} ({GroupName})"
+        : Sender;
 
-    public string MessageId
-    {
-        get => _messageId;
-        set => SetProperty(ref _messageId, value);
-    }
-
-    public bool IsPrivateChat => ChannelType == "1";
-
-    public bool IsGroupChat => ChannelType != "1";
-
-    public string DisplaySender =>
-        !string.IsNullOrEmpty(SenderNickname) ? SenderNickname :
-        !string.IsNullOrEmpty(SenderName) ? SenderName :
-        SenderId;
-
-    public string DisplayGroupName =>
-        !string.IsNullOrEmpty(GuildName) ? GuildName :
-        !string.IsNullOrEmpty(ChannelName) ? ChannelName :
-        GuildId;
-
-    /// 私聊: "联系人:消息" / 群聊: "发件人(群名):消息"
-    public string FormattedDisplay =>
-        IsPrivateChat
-            ? $"{DisplaySender}: {Content}"
-            : $"{DisplaySender}({DisplayGroupName}): {Content}";
-
-    public string DisplayTime => Timestamp.ToString("HH:mm:ss");
+    /// <summary>通知正文</summary>
+    public string NotificationBody => string.IsNullOrWhiteSpace(Content)
+        ? NotificationTitle
+        : Content;
 }

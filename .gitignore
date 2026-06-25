@@ -1,0 +1,22 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+
+# IDE
+.idea/
+.vs/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Build artifacts
+cipx/
+.avalonia-build-tasks/
+*.md5sum
+generate-md5.ps1
+
+# Docs and references
+doc/
+参考/

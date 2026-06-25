@@ -1,8 +1,5 @@
-using System.IO;
 using ClassIsland.Core.Abstractions;
 using ClassIsland.Core.Attributes;
-using ClassIsland.Core.Extensions.Registry;
-using ClassIsland.Shared.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SatoriMessagePlugin.Controls;
@@ -15,24 +12,30 @@ namespace SatoriMessagePlugin;
 [PluginEntrance]
 public class Plugin : PluginBase
 {
-    public SatoriMessageInfo LatestMessage { get; set; } = new();
-    public SatoriConnectionSettings ConnectionSettings { get; set; } = new();
-
     public override void Initialize(HostBuilderContext context, IServiceCollection services)
     {
-        ConnectionSettings = ConfigureFileHelper.LoadConfig<SatoriConnectionSettings>(
-            Path.Combine(PluginConfigFolder, "SatoriSettings.json"));
+        var settings = SatoriConnectionSettings.Load(PluginConfigFolder);
+        settings.Normalize();
+        TrySaveSettings(settings);
 
-        ConnectionSettings.PropertyChanged += (_, _) =>
-        {
-            ConfigureFileHelper.SaveConfig(
-                Path.Combine(PluginConfigFolder, "SatoriSettings.json"),
-                ConnectionSettings);
-        };
+        services.AddSingleton(settings);
+        services.AddSingleton<SatoriMessageInfo>();
+        services.AddSingleton<SatoriWebSocketService>();
 
-        services.AddSingleton(ConnectionSettings);
-        services.AddSingleton(this);
-        services.AddHostedService<SatoriWebSocketService>();
+        services.AddNotificationProvider<SatoriWebSocketService>();
+        services.AddComponent<SatoriMessageComponent>();
         services.AddSettingsPage<SatoriSettingsPage>();
+    }
+
+    private static void TrySaveSettings(SatoriConnectionSettings settings)
+    {
+        try
+        {
+            settings.Save();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SatoriMessagePlugin] 回写设置失败: {ex.Message}");
+        }
     }
 }

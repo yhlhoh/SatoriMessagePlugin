@@ -1,8 +1,11 @@
-id: examples.satoriMessage
-name: Satori 消息显示
-description: 连接到 Satori 协议服务器，实时显示收到的消息（发送人和内容）。
+id: SatoriMessagePlugin
+name: Satori消息监听
+description: 连接到 Satori 服务，接收消息并转发为 ClassIsland 提醒。
 entranceAssembly: "SatoriMessagePlugin.dll"
-url: https://github.com/ClassIsland/ExamplePlugins
-author: Claude
+url: https://github.com/yhlhoh/SatoriMessagePlugin
 version: 1.0.0.0
 apiVersion: 2.0.0.0
+author: yhlhoh
+repoOwner: yhlhoh
+repoName: SatoriMessagePlugin
+assetsRoot: master
