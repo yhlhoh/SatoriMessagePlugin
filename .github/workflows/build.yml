@@ -1,14 +1,10 @@
-name: Build and Package SatoriMessagePlugin
+name: Build and Package
 
 on:
   push:
     branches: [main, master]
-    paths:
-      - 'SatoriMessagePlugin/**'
   pull_request:
     branches: [main, master]
-    paths:
-      - 'SatoriMessagePlugin/**'
   workflow_dispatch:
 
 jobs:
@@ -16,33 +12,25 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET 8.0
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
-        run: dotnet restore SatoriMessagePlugin/SatoriMessagePlugin.csproj
+      - run: dotnet restore SatoriMessagePlugin.csproj
 
-      - name: Publish
-        run: dotnet publish SatoriMessagePlugin/SatoriMessagePlugin.csproj -c Release -o publish
+      - run: dotnet publish SatoriMessagePlugin.csproj -c Release -o publish
 
-      - name: Package as cipx
+      - name: Package
         shell: pwsh
         run: |
           Compress-Archive -Path publish/* -DestinationPath SatoriMessagePlugin.cipx -Force
-          $hash = (Get-FileHash SatoriMessagePlugin.cipx -Algorithm SHA256).Hash
-          "$hash  SatoriMessagePlugin.cipx" | Out-File SatoriMessagePlugin.cipx.sha256 -Encoding ASCII
-          Write-Host "SHA256: $hash"
+          (Get-FileHash SatoriMessagePlugin.cipx -Algorithm SHA256).Hash | Out-File SatoriMessagePlugin.cipx.sha256 -Encoding ASCII
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: SatoriMessagePlugin
           path: |
             SatoriMessagePlugin.cipx
             SatoriMessagePlugin.cipx.sha256
-          if-no-files-found: error
