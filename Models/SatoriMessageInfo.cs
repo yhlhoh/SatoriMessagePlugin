@@ -96,13 +96,16 @@ public partial class SatoriMessageInfo : ObservableObject
             ? DateTimeOffset.FromUnixTimeMilliseconds(createdAt)
             : DateTimeOffset.Now;
 
-        // 更新属性
+        // 更新属性 — 直接写 backing field 以避免中间 PropertyChanged 通知，
+        // 最后统一触发，保证 UI 原子更新。
+#pragma warning disable MVVMTK0034
         _sender = sender;
         _content = content;
         _groupName = groupName;
         _receivedAt = receivedAt;
         _hasMessage = true;
         _isGroupMessage = !string.IsNullOrWhiteSpace(groupName);
+#pragma warning restore MVVMTK0034
 
         // 批量通知 UI 更新
         OnPropertyChanged(nameof(Sender));
@@ -117,8 +120,8 @@ public partial class SatoriMessageInfo : ObservableObject
     /// <summary>获取消息用于去重的唯一键</summary>
     public string GetDeduplicationKey()
     {
-        var bodyId = _content ?? "";
-        return $"{_sender}|{_groupName}|{bodyId}|{_receivedAt:yyyyMMddHHmm}";
+        var bodyId = Content ?? "";
+        return $"{Sender}|{GroupName}|{bodyId}|{ReceivedAt:yyyyMMddHHmm}";
     }
 
     /// <summary>通知标题</summary>
