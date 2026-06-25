@@ -5,9 +5,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDynamicLoading>True</EnableDynamicLoading>
+    <AvaloniaNameGeneratorIsEnabled>false</AvaloniaNameGeneratorIsEnabled>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.6" />
     <PackageReference Include="ClassIsland.PluginSdk" Version="2.0.0.2">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>

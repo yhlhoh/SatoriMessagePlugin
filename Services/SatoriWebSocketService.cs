@@ -1,6 +1,5 @@
 using System.Net.WebSockets;
 using System.Text;
-using Avalonia.Controls;
 using Avalonia.Threading;
 using ClassIsland.Core.Abstractions.Services.NotificationProviders;
 using ClassIsland.Core.Models.Notification;
@@ -223,8 +222,8 @@ public class SatoriWebSocketService : IHostedService
         {
             _notificationSender.ShowNotification(new NotificationRequest()
             {
-                MaskContent = new TextBlock { Text = maskText },
-                OverlayContent = new TextBlock { Text = overlayText },
+                MaskContent = NotificationContent.CreateSimpleTextContent(maskText),
+                OverlayContent = NotificationContent.CreateSimpleTextContent(overlayText),
             });
         });
     }
