@@ -8,7 +8,7 @@ using SatoriMessagePlugin.Services;
 
 namespace SatoriMessagePlugin.Views.SettingsPages;
 
-[SettingsPageInfo("satorimessage.settings", "Satori消息", "")]
+[SettingsPageInfo("satorimessage.settings", "Satori消息", "", "")]
 public partial class SatoriSettingsPage : SettingsPageBase, INotifyPropertyChanged
 {
     private readonly SatoriConnectionSettings _settings;
