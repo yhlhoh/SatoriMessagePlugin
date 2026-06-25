@@ -2,10 +2,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace SatoriMessagePlugin.Models;
 
-/// <summary>
-/// 消息信息模型，用于组件绑定。
-/// 区分私聊/群聊格式：私聊="联系人:消息"；群聊="发件人(群名):消息"
-/// </summary>
 public class SatoriMessageInfo : ObservableRecipient
 {
     private string _senderId = "";
@@ -21,7 +17,6 @@ public class SatoriMessageInfo : ObservableRecipient
     private DateTime _timestamp = DateTime.Now;
     private string _messageId = "";
 
-    /// <summary>发送人 ID</summary>
     public string SenderId
     {
         get => _senderId;
@@ -32,7 +27,6 @@ public class SatoriMessageInfo : ObservableRecipient
         }
     }
 
-    /// <summary>发送人用户名</summary>
     public string SenderName
     {
         get => _senderName;
@@ -43,7 +37,6 @@ public class SatoriMessageInfo : ObservableRecipient
         }
     }
 
-    /// <summary>发送人昵称</summary>
     public string SenderNickname
     {
         get => _senderNickname;
@@ -54,7 +47,6 @@ public class SatoriMessageInfo : ObservableRecipient
         }
     }
 
-    /// <summary>消息内容</summary>
     public string Content
     {
         get => _content;
@@ -65,14 +57,12 @@ public class SatoriMessageInfo : ObservableRecipient
         }
     }
 
-    /// <summary>频道 ID</summary>
     public string ChannelId
     {
         get => _channelId;
         set => SetProperty(ref _channelId, value);
     }
 
-    /// <summary>频道名称</summary>
     public string ChannelName
     {
         get => _channelName;
@@ -83,7 +73,6 @@ public class SatoriMessageInfo : ObservableRecipient
         }
     }
 
-    /// <summary>频道类型 (TEXT=0, DIRECT=1, ...)</summary>
     public string ChannelType
     {
         get => _channelType;
@@ -92,19 +81,18 @@ public class SatoriMessageInfo : ObservableRecipient
             if (SetProperty(ref _channelType, value))
             {
                 OnPropertyChanged(nameof(IsPrivateChat));
+                OnPropertyChanged(nameof(IsGroupChat));
                 OnPropertyChanged(nameof(FormattedDisplay));
             }
         }
     }
 
-    /// <summary>群组 ID</summary>
     public string GuildId
     {
         get => _guildId;
         set => SetProperty(ref _guildId, value);
     }
 
-    /// <summary>群组名称</summary>
     public string GuildName
     {
         get => _guildName;
@@ -115,14 +103,12 @@ public class SatoriMessageInfo : ObservableRecipient
         }
     }
 
-    /// <summary>平台标识</summary>
     public string Platform
     {
         get => _platform;
         set => SetProperty(ref _platform, value);
     }
 
-    /// <summary>消息时间戳</summary>
     public DateTime Timestamp
     {
         get => _timestamp;
@@ -133,40 +119,31 @@ public class SatoriMessageInfo : ObservableRecipient
         }
     }
 
-    /// <summary>消息 ID</summary>
     public string MessageId
     {
         get => _messageId;
         set => SetProperty(ref _messageId, value);
     }
 
-    // ---- 派生属性 ----
-
-    /// <summary>是否私聊（channel.type == "1" 即 DIRECT）</summary>
     public bool IsPrivateChat => ChannelType == "1";
 
-    /// <summary>用于 UI 显示的发送人标识（昵称 > 用户名 > ID）</summary>
+    public bool IsGroupChat => ChannelType != "1";
+
     public string DisplaySender =>
         !string.IsNullOrEmpty(SenderNickname) ? SenderNickname :
         !string.IsNullOrEmpty(SenderName) ? SenderName :
         SenderId;
 
-    /// <summary>群名标识（guild.name > channel.name > guild.id）</summary>
     public string DisplayGroupName =>
         !string.IsNullOrEmpty(GuildName) ? GuildName :
         !string.IsNullOrEmpty(ChannelName) ? ChannelName :
         GuildId;
 
-    /// <summary>
-    /// 格式化后的完整显示文本：
-    /// 私聊: "联系人:消息"
-    /// 群聊: "发件人(群名):消息"
-    /// </summary>
+    /// 私聊: "联系人:消息" / 群聊: "发件人(群名):消息"
     public string FormattedDisplay =>
         IsPrivateChat
             ? $"{DisplaySender}: {Content}"
             : $"{DisplaySender}({DisplayGroupName}): {Content}";
 
-    /// <summary>格式化后的接收时间</summary>
     public string DisplayTime => Timestamp.ToString("HH:mm:ss");
 }

@@ -5,4 +5,4 @@ entranceAssembly: "SatoriMessagePlugin.dll"
 url: https://github.com/ClassIsland/ExamplePlugins
 author: Claude
 version: 1.0.0.0
-apiVersion: 1.4.2.0
+apiVersion: 2.0.0.0
