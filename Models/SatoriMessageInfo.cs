@@ -37,13 +37,36 @@ public partial class SatoriMessageInfo : ObservableObject
                 return "没有最近消息";
 
             var sender = string.IsNullOrWhiteSpace(Sender) ? "未知" : Sender;
-            var content = string.IsNullOrWhiteSpace(Content) ? "" : Content;
+            var content = FormatContent(Content); // 使用格式化后的内容
 
             if (IsGroupMessage && !string.IsNullOrWhiteSpace(GroupName))
                 return $"{sender}({GroupName}):{content}";
 
             return $"{sender}：{content}";
         }
+    }
+
+    /// <summary>通知正文</summary>
+    public string NotificationBody => string.IsNullOrWhiteSpace(Content)
+        ? NotificationTitle
+        : FormatContent(Content); // 使用格式化后的内容
+
+    /// <summary>
+    /// 格式化消息内容：换行替换为空格，并截断至 20 个字符（超出显示 ...）。
+    /// </summary>
+    private string FormatContent(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return raw ?? "";
+
+        // 换行转空格
+        var processed = raw.Replace("\r\n", " ").Replace("\n", " ");
+
+        // 20 字符截断
+        if (processed.Length > 20)
+            return processed.Substring(0, 20) + "...";
+
+        return processed;
     }
 
     /// <summary>从 Satori message body JSON 解析消息</summary>
@@ -100,7 +123,7 @@ public partial class SatoriMessageInfo : ObservableObject
         // 最后统一触发，保证 UI 原子更新。
 #pragma warning disable MVVMTK0034
         _sender = sender;
-        _content = content;
+        _content = content;          // 保留原始内容
         _groupName = groupName;
         _receivedAt = receivedAt;
         _hasMessage = true;
@@ -128,9 +151,4 @@ public partial class SatoriMessageInfo : ObservableObject
     public string NotificationTitle => IsGroupMessage
         ? $"{Sender} ({GroupName})"
         : Sender;
-
-    /// <summary>通知正文</summary>
-    public string NotificationBody => string.IsNullOrWhiteSpace(Content)
-        ? NotificationTitle
-        : Content;
 }
