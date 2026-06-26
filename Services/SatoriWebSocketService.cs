@@ -152,6 +152,7 @@ public class SatoriWebSocketService : NotificationProviderBase, IHostedService
         }
     }
 
+    // ========================= 修改点 1：增加鉴权发送 =========================
     private async Task ConnectAndReceiveAsync(CancellationToken cancellationToken)
     {
         var url = _settings.SatoriWsUrl.Trim();
@@ -179,6 +180,19 @@ public class SatoriWebSocketService : NotificationProviderBase, IHostedService
         IsConnected = true;
         _logger.LogInformation("已连接到 Satori 服务: {Url}", url);
 
+        // ---------- 发送鉴权包 ----------
+        try
+        {
+            await SendAuthenticationAsync(_ws, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "发送鉴权包失败");
+            IsConnected = false;
+            return;
+        }
+        // --------------------------------
+
         try
         {
             await ReceiveLoopAsync(_ws, cancellationToken);
@@ -201,6 +215,19 @@ public class SatoriWebSocketService : NotificationProviderBase, IHostedService
             }
         }
     }
+
+    // 新增鉴权方法
+    private async Task SendAuthenticationAsync(ClientWebSocket ws, CancellationToken cancellationToken)
+    {
+        // Satori 协议鉴权包：{"op": 3}
+        const string authJson = "{\"op\":3}";
+        var authBytes = Encoding.UTF8.GetBytes(authJson);
+        var segment = new ArraySegment<byte>(authBytes);
+
+        _logger.LogInformation("发送鉴权包: {Auth}", authJson);
+        await ws.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken);
+    }
+    // ========================================================================
 
     private async Task ReceiveLoopAsync(ClientWebSocket ws, CancellationToken cancellationToken)
     {
@@ -233,30 +260,48 @@ public class SatoriWebSocketService : NotificationProviderBase, IHostedService
         try
         {
             var node = JsonNode.Parse(rawText);
-            if (node is not JsonObject obj) return;
+            if (node is not JsonObject root) return;
 
-            // Satori 推送可能包裹在 { "type": "message", "body": {...} } 中
-            // 也可能是直接的事件对象
-            var type = obj["type"]?.GetValue<string>();
-            JsonObject? body = null;
+            // ========================= 修改点 2：处理 op 字段 =========================
+            // Satori 消息格式：{ "op": 0, "body": {...} } 或 { "op": 3, ... }
+            // 我们只处理 op == 0 的事件推送
+            var op = root["op"]?.GetValue<int>();
+            if (op == null) return; // 没有 op 字段则忽略
 
-            if (!string.IsNullOrWhiteSpace(type))
+            if (op == 3) // 鉴权响应（登录信息），可以忽略或记录日志
             {
-                body = obj["body"]?.AsObject();
-            }
-            else if (obj["body"] != null)
-            {
-                // 有些实现把事件包装一层
-                body = obj["body"]?.AsObject();
+                _logger.LogDebug("收到鉴权响应（op=3），忽略");
+                return;
             }
 
+            if (op == 1) // 心跳 ping/pong 等，根据需要可处理
+            {
+                _logger.LogDebug("收到心跳（op=1），忽略");
+                // 如果需要回复 pong，这里可以添加逻辑
+                return;
+            }
+
+            if (op != 0) // 不是事件推送，忽略
+            {
+                _logger.LogDebug("收到未知 op={Op}，忽略", op);
+                return;
+            }
+
+            // 提取 body
+            var body = root["body"]?.AsObject();
             if (body == null) return;
 
-            // 只处理 message 事件
-            if (!string.IsNullOrWhiteSpace(type) && type != "message")
+            // 获取事件类型
+            var type = body["type"]?.GetValue<string>();
+            if (string.IsNullOrEmpty(type)) return;
+
+            // 只处理消息创建事件（兼容 message 和 message-created）
+            if (type != "message" && type != "message-created")
                 return;
 
+            // 进一步处理消息体
             ProcessSatoriBody(body);
+            // ======================================================================
         }
         catch (JsonException ex)
         {
@@ -266,9 +311,9 @@ public class SatoriWebSocketService : NotificationProviderBase, IHostedService
 
     private void ProcessSatoriBody(JsonObject body)
     {
-        // 检查是否有 user 和 content，这是 message 事件的特征
+        // 检查是否有 user 和 message.content，这是消息事件的特征
         var hasUser = body["user"] != null;
-        var hasContent = body["content"] != null || body["message"]?["content"] != null;
+        var hasContent = body["message"]?["content"] != null;
 
         if (!hasUser && !hasContent) return;
 
