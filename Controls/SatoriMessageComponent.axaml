@@ -9,5 +9,5 @@
                DataContext="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=local:SatoriMessageComponent}}"
                TextTrimming="CharacterEllipsis"
                VerticalAlignment="Center"
-               FontSize="19" />
+               FontSize="25" />
 </ci:ComponentBase>
