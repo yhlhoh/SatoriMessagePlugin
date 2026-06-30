@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace SatoriMessagePlugin.Models;
@@ -61,10 +62,10 @@ public partial class SatoriMessageInfo : ObservableObject
 
         // 换行转空格
         var processed = raw.Replace("\r\n", " ").Replace("\n", " ");
-
-        // 20 字符截断
-        if (processed.Length > 20)
-            return processed.Substring(0, 20) + "...";
+        
+        bool hasXml = Regex.IsMatch(processed, @"<(\?xml|[\w:]+)");
+        if (hasXml)
+            return "##特殊消息类型##";
 
         return processed;
     }
