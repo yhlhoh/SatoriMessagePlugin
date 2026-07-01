@@ -40,7 +40,7 @@ public partial class SatoriMessageInfo : ObservableObject
             var sender = string.IsNullOrWhiteSpace(Sender) ? "未知" : Sender;
             var content = FormatContent(Content); // 使用格式化后的内容
 
-            if (IsGroupMessage && !string.IsNullOrWhiteSpace(GroupName) && !sender==GroupName)
+            if (IsGroupMessage && !string.IsNullOrWhiteSpace(GroupName) && !(sender==GroupName))
                 return $"{sender}({GroupName}):{content}";
 
             return $"{sender}：{content}";
