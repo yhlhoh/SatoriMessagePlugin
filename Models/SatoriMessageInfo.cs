@@ -61,13 +61,18 @@ public partial class SatoriMessageInfo : ObservableObject
             return raw ?? "";
 
         // 换行转空格
-        var processed = raw.Replace("\r\n", " ").Replace("\n", " ");
-        
-        bool hasXml = Regex.IsMatch(processed, @"<(\?xml|[\w:]+)");
-        if (hasXml)
-            return "##特殊消息类型##";
-
-        return processed;
+        processed = Regex.Replace(processed, 
+    @"<(img|file|face)[^>]*/?>", 
+    match => 
+    {
+        switch (match.Groups[1].Value)
+        {
+            case "img": return "[图片]";
+            case "file": return "[文件]";
+            case "face": return "[表情]";
+            default: return match.Value;
+        }
+    });
     }
 
     /// <summary>从 Satori message body JSON 解析消息</summary>
