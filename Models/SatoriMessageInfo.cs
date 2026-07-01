@@ -61,6 +61,8 @@ public partial class SatoriMessageInfo : ObservableObject
             return raw ?? "";
 
         // 换行转空格
+        var processed = raw.Replace("\r\n", " ").Replace("\n", " ");
+        
         processed = Regex.Replace(processed, 
     @"<(img|file|face)[^>]*/?>", 
     match => 
