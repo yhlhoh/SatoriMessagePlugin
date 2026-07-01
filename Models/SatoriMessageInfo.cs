@@ -40,7 +40,7 @@ public partial class SatoriMessageInfo : ObservableObject
             var sender = string.IsNullOrWhiteSpace(Sender) ? "未知" : Sender;
             var content = FormatContent(Content); // 使用格式化后的内容
 
-            if (IsGroupMessage && !string.IsNullOrWhiteSpace(GroupName))
+            if (IsGroupMessage && !string.IsNullOrWhiteSpace(GroupName) && !sender==GroupName)
                 return $"{sender}({GroupName}):{content}";
 
             return $"{sender}：{content}";
@@ -75,6 +75,7 @@ public partial class SatoriMessageInfo : ObservableObject
             default: return match.Value;
         }
     });
+    return processed;
     }
 
     /// <summary>从 Satori message body JSON 解析消息</summary>
